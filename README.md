@@ -1,29 +1,74 @@
 # 🎵 VibeLiners
 
-**VibeLiners** adalah antarmuka pemutar musik emotif yang dirancang untuk mengubah seluruh estetika visual berdasarkan suasana hati (_mood_) atau genre musik. Filosofi utama kami adalah: _"Musik tidak hanya diputar; ia mendiami ruang."_
+Pemutar musik emotif yang mengubah seluruh tampilan (warna, font, animasi) berdasarkan mood atau genre. Mood bisa ditulis bebas dan dianalisis oleh Gemini AI.
 
-## ✨ Fitur Utama
+**Demo:** https://vibe-liners.vercel.app
 
-- **State-Based Theming**: Sistem tema dinamis yang mengubah variabel CSS global (warna, radius sudut, font, dan efek latar belakang) secara real-time.
-- **Interactive Player**: Pemutar musik minimalis namun canggih dengan kontrol _Play, Pause, Skip,_ dan _Progress Bar_ yang sinkron dengan visualizer.
-- **The Vibe Shifts**:
-  - **Rock**: Warna merah gelap/hitam, font tajam, dan album art yang bergetar (_shake_).
-  - **Chill**: Gradien pastel, sudut melengkung halus, dan efek latar belakang "breathing blur".
-  - **Cyberpunk**: Neon cyan/magenta, efek teks _glitch_, dan grid digital.
-  - **Noir**: Estetika monokrom tingkat tinggi, font serif klasik, dan kontras tajam.
-- **Vibe Liners Engine (AI Powered)**: Masukkan suasana hati Anda (misalnya: _"Malam yang sepi di bawah hujan Jakarta"_) dan AI akan menganalisis teks tersebut untuk memberikan rekomendasi tema yang paling sesuai secara otomatis.
+> Repo ini juga berfungsi sebagai **portfolio DevOps**: aplikasi di-container-kan, di-build dan di-scan otomatis lewat CI/CD, lalu dipublikasikan sebagai image di GitHub Container Registry.
 
-## 🛠️ Teknologi yang Digunakan
+## Stack
 
-- **React**: Library inti untuk antarmuka pengguna.
-- **Tailwind CSS**: Untuk penataan gaya utility-first yang cepat dan responsif.
-- **Framer Motion**: Untuk animasi transisi tema dan elemen UI yang mulus.
-- **Gemini AI**: Digunakan di balik layar untuk menganalisis input teks pengguna dan memetakan emosi ke tema musik tertentu.
-- **Lucide React**: Set ikon modern dan konsisten.
+| Lapisan   | Teknologi                                              |
+| --------- | ------------------------------------------------------ |
+| Aplikasi  | React, TypeScript, Vite, Tailwind CSS, Framer Motion   |
+| AI        | Google Gemini                                          |
+| Container | Docker (multi-stage), Nginx unprivileged               |
+| CI/CD     | GitHub Actions                                         |
+| Keamanan  | Trivy (image scan), Gitleaks (secret scan), Dependabot |
+| Registry  | GitHub Container Registry (GHCR)                       |
 
-## 🚀 Cara Penggunaan
+## Arsitektur
 
-1. **Ganti Lagu**: Pilih lagu dari daftar putar di sebelah kiri. Estetika aplikasi akan berubah secara otomatis sesuai dengan karakteristik lagu tersebut.
-2. **Mood Input**: Di panel sebelah kanan (_Vibe Liners Engine_), ketikkan perasaan atau suasana hati Anda saat ini.
-3. **Apply Shift**: Klik tombol "Apply Vibe Shift". AI akan menganalisis pesan Anda dan melakukan transisi visual ke mode yang paling sesuai.
-4. **Visualizer**: Nikmati visualizer batang yang bergerak di bagian bawah album art saat musik sedang diputar.
+```mermaid
+flowchart LR
+  Dev[Developer] -->|push / PR| GH[GitHub]
+  GH --> CI[GitHub Actions]
+  CI --> T[Lint + Typecheck + Build]
+  CI --> S[Gitleaks]
+  T --> D[Docker build]
+  S --> D
+  D --> V[Trivy scan]
+  V -->|lolos| R[(GHCR image)]
+  R --> Run[Container: Nginx :8080]
+  User[Pengguna] --> Run
+```
+
+## Pipeline CI/CD
+
+1. **test**: `npm ci`, lint, `tsc --noEmit`, test, build.
+2. **secret-scan**: Gitleaks memeriksa seluruh riwayat commit.
+3. **docker**: build image, scan dengan Trivy (gagal jika ada CRITICAL/HIGH yang punya perbaikan), lalu push ke GHCR hanya pada branch `main`.
+4. **Dependabot** membuat PR mingguan untuk npm, Docker, dan GitHub Actions.
+
+## Menjalankan dengan Docker
+
+```bash
+cp .env.example .env        # isi GEMINI_API_KEY
+docker compose up --build
+# buka http://localhost:8080
+```
+
+Health check: `curl http://localhost:8080/health`
+
+## Menjalankan tanpa Docker
+
+```bash
+npm ci
+npm run dev
+```
+
+## Keputusan teknis
+
+- **Multi-stage build**: image akhir hanya berisi Nginx dan file statis, tanpa Node.js dan source code, sehingga kecil dan permukaan serangannya sempit.
+- **Non-root + read-only filesystem**: container berjalan sebagai user non-root, `cap_drop: ALL`, dan `no-new-privileges`.
+- **Cache layer**: dependency di-install di stage terpisah agar build ulang cepat.
+- **Catatan keamanan**: API key Gemini yang dipakai di frontend Vite tertanam di bundle. Rencana perbaikan: pindahkan panggilan Gemini ke backend proxy dan simpan key sebagai secret server.
+- **Ukuran image**: ~76 MB (22 MB terkompresi), dibanding >1 GB jika Node.js dan source ikut terbawa.
+
+## Roadmap
+
+- [ ] Backend proxy untuk Gemini (secret tidak lagi di browser)
+- [ ] Infrastructure as Code (Terraform) untuk deploy ke Cloud Run / ECS
+- [ ] Monitoring (Prometheus + Grafana atau uptime check)
+- [ ] Deploy otomatis (CD) dari image GHCR
+- [ ] Kubernetes + ArgoCD (opsional)

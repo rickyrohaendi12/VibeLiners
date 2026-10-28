@@ -1,0 +1,19 @@
+services:
+  web:
+    build:
+      context: .
+      args:
+        # Dibaca dari file .env lokal (jangan di-commit)
+        GEMINI_API_KEY: ${GEMINI_API_KEY:-}
+    image: vibeliners:local
+    ports:
+      - "8080:8080"
+    restart: unless-stopped
+    read_only: true
+    tmpfs:
+      - /tmp
+      - /var/cache/nginx
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
