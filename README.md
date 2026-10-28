@@ -1,5 +1,9 @@
 # 🎵 VibeLiners
 
+![CI](https://github.com/rickyrohaendi12/VibeLiners/actions/workflows/ci.yml/badge.svg)
+
+Pemutar musik emotif yang mengubah seluruh tampilan ...
+
 Pemutar musik emotif yang mengubah seluruh tampilan (warna, font, animasi) berdasarkan mood atau genre. Mood bisa ditulis bebas dan dianalisis oleh Gemini AI.
 
 **Demo:** https://vibe-liners.vercel.app
