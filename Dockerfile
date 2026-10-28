@@ -24,7 +24,7 @@ RUN npm run build
 # ---------- Stage 3: runtime ----------
 # Image akhir hanya berisi Nginx + file statis hasil build (tanpa Node, tanpa source).
 # nginx-unprivileged berjalan sebagai user non-root dan listen di port 8080.
-FROM nginxinc/nginx-unprivileged:1.27-alpine AS runtime
+FROM nginxinc/nginx-unprivileged:1.31-alpine AS runtime
 
 USER root
 RUN apk upgrade --no-cache
